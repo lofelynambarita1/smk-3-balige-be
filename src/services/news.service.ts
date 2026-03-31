@@ -34,6 +34,9 @@ export class NewsService {
     news.author = createNewsDto.author || 'Admin';
     news.isFeatured = createNewsDto.isFeatured || false;
 
+    // 🔥 FIX PENTING
+    news.isActive = true;
+
     if (createNewsDto.categoryId) {
       news.category = await this.categoryService.findById(
         createNewsDto.categoryId,
@@ -50,15 +53,20 @@ export class NewsService {
   ): Promise<{ data: News[]; total: number; page: number; limit: number }> {
     const query = this.newsRepository.createQueryBuilder('news');
 
+    // 🔥 FIX: where dulu, baru andWhere
+    query.where('news.isActive = :isActive', { isActive: true });
+
     if (categoryId) {
-      query.where('news.categoryId = :categoryId', { categoryId });
+      query.andWhere('news.categoryId = :categoryId', { categoryId });
     }
 
-    query.andWhere('news.isActive = :isActive', { isActive: true });
     query.orderBy('news.createdAt', 'DESC');
 
     const total = await query.getCount();
-    const data = await query.skip((page - 1) * limit).take(limit).getMany();
+    const data = await query
+      .skip((page - 1) * limit)
+      .take(limit)
+      .getMany();
 
     return { data, total, page, limit };
   }
